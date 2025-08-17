@@ -38,10 +38,7 @@ namespace Sysstem32.Helpers
                 // Ctrl+Alt+F12 kombinasyonunu kaydet
                 return RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_F12);
             }
-            catch
-            {
-                return false;
-            }
+            catch{ return false;}
         }
 
         public void UnregisterHotkey()
