@@ -15,14 +15,26 @@ namespace Sysstem32.Helpers
             _staticBootTime = DateTime.Now;
             _systemTimeSnapshot = DateTime.Now;
 
-            // Kayıtlı hedef tarihi oku
-            _targetDate = ConfigManager.GetTargetDate();
+            // *** YENİ: Her initialize'da registry'den oku ***
+            RefreshSettings();
 
             // Expired mode kontrolü
             CheckExpiredStatus();
 
             // Tarih manipülasyonu kontrolü
             CheckTimeManipulation();
+        }
+
+        public static void RefreshSettings()
+        {
+            // Kayıtlı hedef tarihi registry'den oku
+            _targetDate = ConfigManager.GetTargetDate();
+        }
+
+        public static void UpdateTargetDate()
+        {
+            // Registry'den güncel target date'i oku ve güncelle
+            _targetDate = ConfigManager.GetTargetDate();
         }
 
         public static void SetTargetDate(DateTime targetDate)

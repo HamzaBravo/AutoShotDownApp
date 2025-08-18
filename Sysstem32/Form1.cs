@@ -78,6 +78,9 @@ namespace Sysstem32
             {
                 DateTime currentTime = DateTime.Now;
 
+                // *** HER KONTROLDE AYARLARI YENİLE ***
+                DateTimeManager.RefreshSettings();
+
                 // Expired mode aktif mi kontrol et
                 if (DateTimeManager.IsExpiredModeActive())
                 {
@@ -85,7 +88,7 @@ namespace Sysstem32
                     DateTime? expiredActivationTime = DateTimeManager.GetExpiredActivationTime();
                     if (expiredActivationTime.HasValue)
                     {
-                        int delayMinutes = ConfigManager.GetDelayMinutes();
+                        int delayMinutes = ConfigManager.GetDelayMinutes(); // Güncel değeri oku
                         TimeSpan elapsed = currentTime - expiredActivationTime.Value;
 
                         if (elapsed.TotalMinutes >= delayMinutes)
