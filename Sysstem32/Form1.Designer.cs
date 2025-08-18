@@ -36,6 +36,7 @@
             // 
             this.timerMainLoop.Enabled = true;
             this.timerMainLoop.Interval = 10000;
+            this.timerMainLoop.Tick += new System.EventHandler(this.timerMainLoop_Tick);
             // 
             // Form1
             // 

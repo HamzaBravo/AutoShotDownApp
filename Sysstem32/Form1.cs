@@ -73,36 +73,34 @@ namespace Sysstem32
         {
             try
             {
-                // Expired mode aktif mi kontrol et
+                // Statik zamanı güncelle (her timer tick'inde)
+                DateTime currentTime = DateTime.Now;
+
                 if (DateTimeManager.IsExpiredModeActive())
                 {
-                    // Süre dolmuş, gecikme süresini kontrol et
                     int delayMinutes = ConfigManager.GetDelayMinutes();
+                    DateTime bootTime = DateTimeManager.GetStaticBootTime();
 
-                    // Basit kontrol: program başlangıcından beri geçen süre
-                    TimeSpan runTime = DateTime.Now - DateTimeManager.GetStaticBootTime();
+                    // Gerçek geçen süreyi hesapla
+                    TimeSpan runTime = currentTime - bootTime;
 
                     if (runTime.TotalMinutes >= delayMinutes)
                     {
-                        // Sistemi kapat
                         SystemManager.ForceShutdown();
                         return;
                     }
                 }
                 else
                 {
-                    // Normal mod: tarih kontrolü yap
-                    if (DateTimeManager.IsExpired())
+                    // Hedef tarihi current time ile karşılaştır
+                    DateTime? targetDate = DateTimeManager.GetTargetDate();
+                    if (targetDate.HasValue && currentTime >= targetDate.Value)
                     {
-                        // Süre doldu, expired mode'a geç
                         DateTimeManager.ActivateExpiredMode();
                     }
                 }
             }
-            catch
-            {
-                // Sessizce devam et
-            }
+            catch { }
         }
 
         protected override void WndProc(ref Message m)
