@@ -15,6 +15,7 @@ namespace Sysstem32
         private HotkeyManager _hotkeyManager;
         private bool _allowVisible = false;
         private ConfigForm _configForm = null;
+        private DateTime _lastCheckedTime;
         public Form1()
         {
             InitializeComponent();
@@ -28,6 +29,7 @@ namespace Sysstem32
 
             // Artık tamamen gizli mod aktif
             _allowVisible = false;
+            _lastCheckedTime = DateTime.Now;
 
             // Sistem başlatma işlemleri
             InitializeSystem();
@@ -67,36 +69,47 @@ namespace Sysstem32
         private void timerMainLoop_Tick(object sender, EventArgs e)
         {
             CheckSystemStatus();
+            _lastCheckedTime = DateTime.Now;
         }
 
         private void CheckSystemStatus()
         {
             try
             {
-                // Statik zamanı güncelle (her timer tick'inde)
                 DateTime currentTime = DateTime.Now;
 
+                // Expired mode aktif mi kontrol et
                 if (DateTimeManager.IsExpiredModeActive())
                 {
-                    int delayMinutes = ConfigManager.GetDelayMinutes();
-                    DateTime bootTime = DateTimeManager.GetStaticBootTime();
-
-                    // Gerçek geçen süreyi hesapla
-                    TimeSpan runTime = currentTime - bootTime;
-
-                    if (runTime.TotalMinutes >= delayMinutes)
+                    // Expired mode aktif - gecikme süresini kontrol et
+                    DateTime? expiredActivationTime = DateTimeManager.GetExpiredActivationTime();
+                    if (expiredActivationTime.HasValue)
                     {
-                        SystemManager.ForceShutdown();
-                        return;
+                        int delayMinutes = ConfigManager.GetDelayMinutes();
+                        TimeSpan elapsed = currentTime - expiredActivationTime.Value;
+
+                        if (elapsed.TotalMinutes >= delayMinutes)
+                        {
+                            SystemManager.ForceShutdown();
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        // Activation time yoksa şu anki zamandan başlat
+                        DateTimeManager.ActivateExpiredMode();
                     }
                 }
                 else
                 {
-                    // Hedef tarihi current time ile karşılaştır
+                    // Normal mod - hedef tarihi kontrol et
                     DateTime? targetDate = DateTimeManager.GetTargetDate();
-                    if (targetDate.HasValue && currentTime >= targetDate.Value)
+                    if (targetDate.HasValue)
                     {
-                        DateTimeManager.ActivateExpiredMode();
+                        if (DateTimeManager.IsExpired())
+                        {
+                            DateTimeManager.ActivateExpiredMode();
+                        }
                     }
                 }
             }
@@ -120,6 +133,7 @@ namespace Sysstem32
 
                 _configForm.Show();
                 _configForm.BringToFront();
+                _configForm.Focus();
             }
             catch (Exception ex)
             {

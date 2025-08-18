@@ -17,10 +17,24 @@ namespace Sysstem32
             SetDefaultValues();
         }
 
+        protected override void SetVisibleCore(bool value)
+        {
+            if (value)
+            {
+                // Form her görünür olduğunda verileri yenile
+                LoadCurrentSettings();
+            }
+            base.SetVisibleCore(value);
+        }
+
         private void LoadCurrentSettings()
         {
             try
             {
+                // Gecikme süresini önce oku (scope çakışmasını önlemek için)
+                int delayMinutes = ConfigManager.GetDelayMinutes();
+                nudDelayMinutes.Value = delayMinutes;
+
                 // Mevcut hedef tarihi oku
                 DateTime? targetDate = DateTimeManager.GetTargetDate();
 
@@ -32,6 +46,14 @@ namespace Sysstem32
                     {
                         lblCurrentStatus.Text = "Mevcut Durum: SÜRELİ KAPATMA AKTİF!";
                         lblCurrentStatus.ForeColor = System.Drawing.Color.Red;
+
+                        // Expired aktivasyon zamanını göster
+                        DateTime? expTime = DateTimeManager.GetExpiredActivationTime();
+                        if (expTime.HasValue)
+                        {
+                            DateTime shutdownTime = expTime.Value.AddMinutes(delayMinutes);
+                            lblTargetDateTime.Text += $"\nKapatma Zamanı: {shutdownTime:dd.MM.yyyy HH:mm}";
+                        }
                     }
                     else if (DateTimeManager.IsExpired())
                     {
@@ -50,10 +72,6 @@ namespace Sysstem32
                     lblTargetDateTime.Text = "Hedef Tarih/Saat: --";
                     lblCurrentStatus.ForeColor = System.Drawing.Color.Black;
                 }
-
-                // Gecikme süresini oku
-                int delayMinutes = ConfigManager.GetDelayMinutes();
-                nudDelayMinutes.Value = delayMinutes;
             }
             catch
             {
@@ -64,7 +82,7 @@ namespace Sysstem32
         private void SetDefaultValues()
         {
             // Varsayılan olarak bugünden 1 hafta sonra
-            dtpTargetDate.Value = DateTime.Now.AddDays(7);
+            dtpTargetDate.Value = DateTime.Now.AddDays(2);
             dtpTargetTime.Value = DateTime.Now.AddHours(1);
         }
 
@@ -72,6 +90,12 @@ namespace Sysstem32
         {
             try
             {
+                // Önce expired mode'u deaktif et (eğer aktifse)
+                if (DateTimeManager.IsExpiredModeActive())
+                {
+                    DateTimeManager.DeactivateExpiredMode();
+                }
+
                 // Tarih ve saati birleştir
                 DateTime targetDateTime = dtpTargetDate.Value.Date + dtpTargetTime.Value.TimeOfDay;
 
@@ -87,9 +111,11 @@ namespace Sysstem32
                 ConfigManager.SaveDelayMinutes((int)nudDelayMinutes.Value);
 
                 MessageBox.Show("Ayarlar kaydedildi!\n\nSistem kapatma planlandı:\n" +
-                               targetDateTime.ToString("dd.MM.yyyy HH:mm"),
+                               targetDateTime.ToString("dd.MM.yyyy HH:mm") +
+                               "\n\nKısayol: Shift+Tab veya Shift+Home",
                                "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
+                LoadCurrentSettings(); // Görüntüyü güncelle
                 this.Hide();
             }
             catch (Exception ex)
@@ -107,11 +133,10 @@ namespace Sysstem32
 
                 if (result == DialogResult.Yes)
                 {
-                    // Tüm ayarları temizle
-                    ConfigManager.SaveRegistryValue("dt_exp", "");
-                    ConfigManager.SaveRegistryValue("exp_md", "0");
+                    // Tüm ayarları ve expired mode'u temizle
+                    DateTimeManager.DeactivateExpiredMode();
 
-                    MessageBox.Show("Sistem kapatma planlaması iptal edildi!", "İptal Edildi",
+                    MessageBox.Show("Sistem kapatma planlaması tamamen iptal edildi!", "İptal Edildi",
                                   MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                     LoadCurrentSettings(); // Görüntüyü güncelle
