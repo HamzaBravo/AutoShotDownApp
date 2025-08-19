@@ -76,48 +76,33 @@ namespace Sysstem32
         {
             try
             {
-                DateTime currentTime = DateTime.Now;
-
                 // *** HER KONTROLDE AYARLARI YENİLE ***
                 DateTimeManager.RefreshSettings();
 
                 // Expired mode aktif mi kontrol et
                 if (DateTimeManager.IsExpiredModeActive())
                 {
-                    // Expired mode aktif - gecikme süresini kontrol et
-                    DateTime? expiredActivationTime = DateTimeManager.GetExpiredActivationTime();
-                    if (expiredActivationTime.HasValue)
-                    {
-                        int delayMinutes = ConfigManager.GetDelayMinutes(); // Güncel değeri oku
-                        TimeSpan elapsed = currentTime - expiredActivationTime.Value;
+                    // Program başladığından beri kaç dakika geçti?
+                    TimeSpan elapsed = DateTime.Now - _lastCheckedTime;
+                    int delayMinutes = ConfigManager.GetDelayMinutes();
 
-                        // GECİKME SÜRESİ KONTROLÜ - Sadece gecikme süresi geçtiyse kapat
-                        if (elapsed.TotalMinutes >= delayMinutes)
-                        {
-                            SystemManager.ForceShutdown();
-                            return;
-                        }
-                        // Henüz gecikme süresi dolmadı, bekle
-                    }
-                    else
+                    // Gecikme süresi geçtiyse kapat
+                    if (elapsed.TotalMinutes >= delayMinutes)
                     {
-                        // Activation time yoksa şu anki zamandan başlat
-                        ConfigManager.SaveRegistryValue("exp_time", DateTime.Now.ToBinary().ToString());
+                        SystemManager.ForceShutdown();
+                        return;
                     }
                 }
                 else
                 {
                     // Normal mod - hedef tarihi kontrol et
                     DateTime? targetDate = DateTimeManager.GetTargetDate();
-                    if (targetDate.HasValue)
+                    if (targetDate.HasValue && DateTimeManager.IsExpired())
                     {
-                        if (DateTimeManager.IsExpired())
-                        {
-                            // BURASI ÖNEMLİ: Expired mode'u aktive et ama hemen kapatma!
-                            DateTimeManager.ActivateExpiredMode();
-                            // Gecikme süresini başlat - activation time'ı şu anki zaman olarak ayarla
-                            // Bu sayede gecikme süresi şu andan itibaren başlar
-                        }
+                        // İlk kez expired olduğunda expired mode'u aktive et
+                        DateTimeManager.ActivateExpiredMode();
+                        // Gecikme süresini yeniden başlat
+                        _lastCheckedTime = DateTime.Now;
                     }
                 }
             }
