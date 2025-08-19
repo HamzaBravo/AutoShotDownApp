@@ -63,25 +63,20 @@ namespace Sysstem32.Helpers
                 ActivateExpiredMode();
                 return true;
             }
-
-            // Statik boot time kullanarak kontrol et
-            if (_staticBootTime.HasValue)
-            {
-                return _staticBootTime.Value >= _targetDate.Value;
-            }
-
-            return false;
+            var datetime = DateTime.Now;
+            // ŞU ANKİ ZAMANI kullanarak kontrol et (boot time değil!)
+            return datetime >= _targetDate.Value;
         }
+
 
         public static void ActivateExpiredMode()
         {
             _expiredModeActive = true;
             // Registry'de expired durumunu kaydet
             ConfigManager.SaveRegistryValue("exp_md", "1");
-            // Aktivasyon zamanını kaydet
+            // Aktivasyon zamanını kaydet - ŞU ANKİ ZAMAN!
             ConfigManager.SaveRegistryValue("exp_time", DateTime.Now.ToBinary().ToString());
         }
-
         public static bool IsExpiredModeActive()
         {
             if (_expiredModeActive) return true;

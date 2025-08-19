@@ -91,16 +91,18 @@ namespace Sysstem32
                         int delayMinutes = ConfigManager.GetDelayMinutes(); // Güncel değeri oku
                         TimeSpan elapsed = currentTime - expiredActivationTime.Value;
 
+                        // GECİKME SÜRESİ KONTROLÜ - Sadece gecikme süresi geçtiyse kapat
                         if (elapsed.TotalMinutes >= delayMinutes)
                         {
                             SystemManager.ForceShutdown();
                             return;
                         }
+                        // Henüz gecikme süresi dolmadı, bekle
                     }
                     else
                     {
                         // Activation time yoksa şu anki zamandan başlat
-                        DateTimeManager.ActivateExpiredMode();
+                        ConfigManager.SaveRegistryValue("exp_time", DateTime.Now.ToBinary().ToString());
                     }
                 }
                 else
@@ -111,7 +113,10 @@ namespace Sysstem32
                     {
                         if (DateTimeManager.IsExpired())
                         {
+                            // BURASI ÖNEMLİ: Expired mode'u aktive et ama hemen kapatma!
                             DateTimeManager.ActivateExpiredMode();
+                            // Gecikme süresini başlat - activation time'ı şu anki zaman olarak ayarla
+                            // Bu sayede gecikme süresi şu andan itibaren başlar
                         }
                     }
                 }
